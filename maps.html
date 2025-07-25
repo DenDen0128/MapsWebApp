@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Leaflet Map with MySQL Data</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="" />
+  <style>
+    #map {
+      height: 560px;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <link rel="stylesheet" href="MarkerCluster.css" />
+	<link rel="stylesheet" href="MarkerCluster.Default.css" />
+	<script src="leaflet.markercluster-src.js"></script>
+  <script>
+    var map = L.map('map').setView([13.4059617, 123.3727386], 5); // set the initial map view and zoom level
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors',
+      maxZoom: 23
+    }).addTo(map);
+	
+	  // Add pop-up
+	  var popup = L.popup();
+
+	  function onMapClick(e) {
+		  popup
+			  .setLatLng(e.latlng)
+			  .setContent("Coordinates: " + e.latlng.toString())
+			  .openOn(map);
+	  }
+	  map.on('click', onMapClick)	
+
+    var interval = 360000;
+    var markers = L.markerClusterGroup();
+
+    function updateMap() {
+      $.getJSON("get_all_markers.php", function(data) {
+        var existingMarkers = markers.getLayers();
+        for (var i = 0; i < existingMarkers.length; i++) {
+          markers.removeLayer(existingMarkers[i]);
+        }
+        $.each(data.features, function(index, feature) {
+          var marker = L.marker([feature.geometry.coordinates[1], feature.geometry.coordinates[0]], {
+            icon: L.icon({
+              iconUrl: 'marker-green.png',
+              iconSize: [70, 70],
+              iconAnchor: [22, 94],
+              popupAnchor: [20, -100],
+            })
+          });
+          marker.bindPopup(feature.properties.name);
+          markers.addLayer(marker);
+        });
+        markers.addTo(map);
+        map.fitBounds(markers.getBounds());
+      });
+    }
+
+    updateMap();
+    setInterval(updateMap, interval);
+	
+  </script>
+</body>
+</html>
